@@ -217,6 +217,18 @@ def parse_args() -> argparse.Namespace:
         nargs="?",
         help="Chemin vers un fichier .mp4 ou .mkv (sinon une invite demandera le chemin)",
     )
+    parser.add_argument(
+        "--min-segment-duration",
+        type=float,
+        default=1.0,
+        help="Fusionne/ignore les segments plus courts que cette durée (secondes)",
+    )
+    parser.add_argument(
+        "--max-segments",
+        type=int,
+        default=None,
+        help="Limite facultative du nombre de segments détectés",
+    )
     return parser.parse_args()
 
 
@@ -242,6 +254,12 @@ def main() -> int:
     try:
         with tempfile.TemporaryDirectory() as tmpdir:
             audio_path = extract_audio(video_path, Path(tmpdir), ffmpeg_path)
+            matches = run_pipeline(
+                str(audio_path),
+                store,
+                max_segments=args.max_segments,
+                min_segment_duration=args.min_segment_duration,
+            )
             audio_path = extract_audio(video_path, Path(tmpdir))
             matches = run_pipeline(str(audio_path), store)
     except subprocess.CalledProcessError as exc:

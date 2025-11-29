@@ -34,6 +34,7 @@ python -m dj_identifier.cli set.wav --bootstrap examples/fingerprints.json --max
 
 - `--bootstrap` : fichier JSON optionnel contenant des empreintes connues (voir ci-dessous).
 - `--fingerprints` : chemin où persister/charger la base d'empreintes locale.
+- `--min-segment-duration` : fusionne/ignore les segments inférieurs à cette durée (par défaut 1s) pour éviter des fenêtres trop petites.
 
 ### Mode "j'upload mon set et ça marche"
 Un petit serveur HTTP est fourni pour accepter un fichier uploadé et renvoyer les morceaux détectés. Installe `fastapi` et `uvicorn`, démarre le serveur puis envoie simplement le fichier audio.
@@ -91,6 +92,12 @@ sudo apt-get install ffmpeg
 
 # 4) Lancer l'identification vidéo
 python identify_video.py chemin/vers/set.mp4
+```
+
+Options utiles si vous souhaitez contrôler la granularité de la segmentation :
+
+```bash
+python identify_video.py --min-segment-duration 2.0 --max-segments 15 chemin/vers/set.mp4
 ```
 
 Sans argument, le script demande simplement le chemin du fichier. Le résultat liste chaque morceau avec son timecode :

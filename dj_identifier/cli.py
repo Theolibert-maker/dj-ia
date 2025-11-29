@@ -26,6 +26,12 @@ def parse_args(argv: List[str] | None = None) -> argparse.Namespace:
         help="Optional limit on the number of detected segments",
     )
     parser.add_argument(
+        "--min-segment-duration",
+        type=float,
+        default=1.0,
+        help="Merge or skip segments shorter than this duration (seconds)",
+    )
+    parser.add_argument(
         "--bootstrap",
         type=Path,
         default=None,
@@ -47,6 +53,12 @@ def main(argv: List[str] | None = None) -> None:
     bootstrap_data = load_bootstrap(args.bootstrap)
     store = bootstrap_store(bootstrap_data, path=args.fingerprints)
 
+    matches = run_pipeline(
+        args.audio,
+        store,
+        max_segments=args.max_segments,
+        min_segment_duration=args.min_segment_duration,
+    )
     matches = run_pipeline(args.audio, store, max_segments=args.max_segments)
     for match in matches:
         print(
