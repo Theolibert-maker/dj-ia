@@ -25,6 +25,7 @@ def run_pipeline(
 
     y, sr = load_audio(audio_path, sr=target_sr)
     segments = onset_boundaries(y, sr, max_segments=max_segments, min_duration=min_segment_duration)
+    segments = onset_boundaries(y, sr, max_segments=max_segments)
     fingerprints: Iterable[SegmentFingerprint] = fingerprint_segments(y, sr, segments)
     return build_matches(fingerprints, fingerprint_store)
 

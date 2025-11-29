@@ -56,6 +56,10 @@ def onset_boundaries(
             segments.append(TrackSegment(start=current_start, end=end))
 
         current_start = end
+    for start, end in zip(times[:-1], times[1:]):
+        if end - start <= 0:
+            continue
+        segments.append(TrackSegment(start=start, end=end))
 
     return segments
 

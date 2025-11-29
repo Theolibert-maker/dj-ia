@@ -39,6 +39,7 @@ def fingerprint_segments(
         if len(slice_) < min_samples:
             continue
         digest = fingerprint_fn(slice_, sr)
+        digest = fingerprint_fn(y[start:end], sr)
         fingerprints.append(SegmentFingerprint(segment=segment, hash=digest))
     return fingerprints
 
