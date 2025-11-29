@@ -9,33 +9,37 @@ import argparse
 import importlib.util
 import json
 import shutil
-import json
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 from typing import Dict, Iterable, List
 
+REPO_ROOT = Path(__file__).resolve().parent
+REQUIREMENTS_PATH = REPO_ROOT / "requirements.txt"
+
 
 def _ensure_dependencies() -> None:
     """Fail fast with a helpful message if runtime deps are missing."""
 
+    pip_cmd = f"{sys.executable} -m pip install -r {REQUIREMENTS_PATH}"
     required = [
-        ("numpy", "pip install -r requirements.txt"),
-        ("librosa", "pip install -r requirements.txt"),
-        ("soundfile", "pip install -r requirements.txt"),
+        "numpy",
+        "librosa",
+        "soundfile",
     ]
     missing: list[str] = []
-    for module, hint in required:
+    for module in required:
         if importlib.util.find_spec(module) is None:
-            missing.append(f"- {module} (essayez : {hint})")
+            missing.append(f"- {module}")
 
     if missing:
         message = "\n".join(
             [
                 "Dépendances manquantes pour lancer l'identification :",
                 *missing,
-                "\nInstallez-les puis relancez le script.",
+                "\nInstallez-les dans le même environnement Python :",
+                f"  {pip_cmd}",
             ]
         )
         raise SystemExit(message)
@@ -58,7 +62,6 @@ def _ensure_ffmpeg() -> None:
 from dj_identifier.pipeline import bootstrap_store, run_pipeline
 from dj_identifier.types import TrackMatch
 
-REPO_ROOT = Path(__file__).resolve().parent
 DEFAULT_FINGERPRINT_DB = REPO_ROOT / "fingerprints.json"
 DEFAULT_BOOTSTRAP = REPO_ROOT / "examples" / "fingerprints.json"
 SUPPORTED_VIDEO_EXTS = {".mp4", ".mkv"}

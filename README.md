@@ -25,7 +25,6 @@ Le dépôt inclut désormais un prototype Python (module `dj_identifier`) pour s
 ### Installation minimale
 ```
 pip install -r requirements.txt
-pip install librosa numpy
 ```
 
 ### Lancer l'identification
@@ -76,12 +75,19 @@ La réponse contient les timecodes et les titres (d'après les empreintes connue
 Si ton set est dans un conteneur vidéo (MP4/MKV), le script `identify_video.py` extrait l'audio avec `ffmpeg` et lance le pipeline :
 
 ```bash
-pip install -r requirements.txt  # dépendances audio et serveur
+# 1) (Optionnel mais conseillé) créer un venv et l'activer
+python -m venv .venv
+source .venv/bin/activate  # Windows PowerShell: .venv\Scripts\Activate.ps1
+
+# 2) Installer les dépendances dans CE même environnement
+python -m pip install -r requirements.txt
+
+# 3) Installer ffmpeg s'il n'est pas déjà présent
 sudo apt-get install ffmpeg
 # Windows : téléchargez le binaire ffmpeg (par ex. https://www.gyan.dev/ffmpeg/builds/),
 # dézippez et ajoutez le dossier `bin` au PATH pour que la commande `ffmpeg` soit trouvée.
-pip install librosa numpy  # dépendances audio
-sudo apt-get install ffmpeg
+
+# 4) Lancer l'identification vidéo
 python identify_video.py chemin/vers/set.mp4
 ```
 
