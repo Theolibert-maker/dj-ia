@@ -27,6 +27,7 @@ def fingerprint_segments(
     sr: int,
     segments: Sequence[TrackSegment],
     fingerprint_fn=chroma_fingerprint,
+    min_samples: int = 2048,
 ) -> List[SegmentFingerprint]:
     """Fingerprint each segment individually."""
 
@@ -34,7 +35,10 @@ def fingerprint_segments(
     for segment in segments:
         start = int(segment.start * sr)
         end = int(segment.end * sr)
-        digest = fingerprint_fn(y[start:end], sr)
+        slice_ = y[start:end]
+        if len(slice_) < min_samples:
+            continue
+        digest = fingerprint_fn(slice_, sr)
         fingerprints.append(SegmentFingerprint(segment=segment, hash=digest))
     return fingerprints
 

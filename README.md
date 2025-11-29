@@ -100,6 +100,8 @@ Sans argument, le script demande simplement le chemin du fichier. Le résultat l
 [01:32 - 03:05] Artist Two - Anthem (confiance 0.85)
 ```
 
+Pour éviter les avertissements `librosa` sur des fenêtres trop courtes, les segments de moins d'une seconde sont fusionnés/ignorés avant le fingerprinting.
+
 ### Structure d'un fichier d'empreintes
 ```json
 {

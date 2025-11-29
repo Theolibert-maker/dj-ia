@@ -14,6 +14,7 @@ def run_pipeline(
     fingerprint_store: FingerprintStore,
     target_sr: int = 22050,
     max_segments: int | None = None,
+    min_segment_duration: float = 1.0,
 ) -> List[TrackMatch]:
     """
     End-to-end pipeline that produces timecoded matches for a DJ set.
@@ -23,7 +24,7 @@ def run_pipeline(
     """
 
     y, sr = load_audio(audio_path, sr=target_sr)
-    segments = onset_boundaries(y, sr, max_segments=max_segments)
+    segments = onset_boundaries(y, sr, max_segments=max_segments, min_duration=min_segment_duration)
     fingerprints: Iterable[SegmentFingerprint] = fingerprint_segments(y, sr, segments)
     return build_matches(fingerprints, fingerprint_store)
 
