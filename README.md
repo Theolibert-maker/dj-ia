@@ -19,6 +19,47 @@ Ce dépôt décrit une approche simple pour créer une IA capable de recevoir un
 4. **Consolidation** : si plusieurs segments correspondent au même morceau, fusionner et lisser les timecodes (tolérance de quelques secondes autour des transitions).
 5. **Export** : produire un fichier JSON/CSV avec `start_time`, `end_time`, `artist`, `title`, `confidence`.
 
+## Exemple de code utilisable
+Le dépôt inclut désormais un prototype Python (module `dj_identifier`) pour segmenter un set, fingerprint chaque segment et le comparer à une base JSON de références locales.
+
+### Installation minimale
+```
+pip install librosa numpy
+```
+
+### Lancer l'identification
+```
+python -m dj_identifier.cli set.wav --bootstrap examples/fingerprints.json --max-segments 12
+```
+
+- `--bootstrap` : fichier JSON optionnel contenant des empreintes connues (voir ci-dessous).
+- `--fingerprints` : chemin où persister/charger la base d'empreintes locale.
+
+### Structure d'un fichier d'empreintes
+```json
+{
+  "track-01": {
+    "title": "Artist One - Intro",
+    "artist": "Artist One",
+    "hashes": ["ab12cd..."]
+  }
+}
+```
+
+### Utilisation programmatique
+```python
+from dj_identifier.pipeline import bootstrap_store, run_pipeline
+
+store = bootstrap_store({
+    "track-01": {"title": "Artist One - Intro", "artist": "Artist One", "hashes": ["ab12cd"]},
+    "track-02": {"title": "Artist Two - Anthem", "artist": "Artist Two", "hashes": ["de34fa"]},
+})
+
+matches = run_pipeline("set.wav", store)
+for match in matches:
+    print(match.segment.start, match.segment.end, match.title, match.artist, match.confidence)
+```
+
 ## Exemple minimal (pseudocode)
 ```python
 import json
