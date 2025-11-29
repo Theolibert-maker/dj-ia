@@ -8,12 +8,16 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
+import shlex
 import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 from typing import Dict, Iterable, List
+
+FFMPEG_ENV_VAR = "FFMPEG_PATH"
 
 REPO_ROOT = Path(__file__).resolve().parent
 REQUIREMENTS_PATH = REPO_ROOT / "requirements.txt"
@@ -22,6 +26,16 @@ REQUIREMENTS_PATH = REPO_ROOT / "requirements.txt"
 def _ensure_dependencies() -> None:
     """Fail fast with a helpful message if runtime deps are missing."""
 
+    pip_cmd = " ".join(
+        [
+            shlex.quote(sys.executable),
+            "-m",
+            "pip",
+            "install",
+            "-r",
+            shlex.quote(str(REQUIREMENTS_PATH)),
+        ]
+    )
     pip_cmd = f"{sys.executable} -m pip install -r {REQUIREMENTS_PATH}"
     required = [
         "numpy",
@@ -48,6 +62,39 @@ def _ensure_dependencies() -> None:
 _ensure_dependencies()
 
 
+def _resolve_ffmpeg() -> str:
+    """Return an ffmpeg executable path or exit with a helpful hint."""
+
+    candidates = []
+
+    # 1) Explicit override from env
+    env_value = os.environ.get(FFMPEG_ENV_VAR)
+    if env_value:
+        direct_env_path = Path(env_value).expanduser()
+        if direct_env_path.exists():
+            candidates.append(str(direct_env_path))
+        env_path = shutil.which(env_value)
+        if env_path:
+            candidates.append(env_path)
+
+    # 2) Standard PATH discovery
+    candidates.extend(filter(None, [shutil.which("ffmpeg"), shutil.which("ffmpeg.exe")]))
+
+    # 3) Local copies near the repo (common Windows unzip pattern)
+    local_ffmpeg = REPO_ROOT / "ffmpeg.exe"
+    if local_ffmpeg.exists():
+        candidates.append(str(local_ffmpeg))
+
+    for candidate in candidates:
+        if candidate and Path(candidate).exists():
+            return str(Path(candidate))
+
+    hint = (
+        "ffmpeg introuvable. Installez-le et ajoutez-le au PATH, ou fournissez "
+        f"un chemin explicite via la variable d'environnement {FFMPEG_ENV_VAR} "
+        "(ex: setx FFMPEG_PATH C:\\chemin\\vers\\ffmpeg.exe sous Windows)."
+    )
+    raise SystemExit(hint)
 def _ensure_ffmpeg() -> None:
     """Check ffmpeg availability with a clear, user-friendly hint."""
 
@@ -83,11 +130,13 @@ def ensure_store(db_path: Path = DEFAULT_FINGERPRINT_DB, bootstrap_path: Path = 
     return store
 
 
+def extract_audio(video_path: Path, workdir: Path, ffmpeg_path: str) -> Path:
 def extract_audio(video_path: Path, workdir: Path) -> Path:
     """Utilise ffmpeg pour extraire l'audio mono du conteneur vidéo."""
 
     output = workdir / f"{video_path.stem}.wav"
     command = [
+        ffmpeg_path,
         "ffmpeg",
         "-y",
         "-i",
@@ -154,6 +203,7 @@ def main() -> int:
         return 1
 
     try:
+        ffmpeg_path = _resolve_ffmpeg()
         _ensure_ffmpeg()
     except SystemExit as exc:
         print(exc)
@@ -163,6 +213,7 @@ def main() -> int:
 
     try:
         with tempfile.TemporaryDirectory() as tmpdir:
+            audio_path = extract_audio(video_path, Path(tmpdir), ffmpeg_path)
             audio_path = extract_audio(video_path, Path(tmpdir))
             matches = run_pipeline(str(audio_path), store)
     except subprocess.CalledProcessError as exc:

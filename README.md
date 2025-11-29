@@ -86,6 +86,8 @@ python -m pip install -r requirements.txt
 sudo apt-get install ffmpeg
 # Windows : téléchargez le binaire ffmpeg (par ex. https://www.gyan.dev/ffmpeg/builds/),
 # dézippez et ajoutez le dossier `bin` au PATH pour que la commande `ffmpeg` soit trouvée.
+# Si vous ne voulez pas toucher au PATH, placez `ffmpeg.exe` à la racine du repo
+# ou exposez-le via la variable d'environnement FFMPEG_PATH (ex: `setx FFMPEG_PATH C:\\chemin\\vers\\ffmpeg.exe`).
 
 # 4) Lancer l'identification vidéo
 python identify_video.py chemin/vers/set.mp4
