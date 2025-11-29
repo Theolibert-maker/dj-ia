@@ -59,6 +59,7 @@ def main(argv: List[str] | None = None) -> None:
         max_segments=args.max_segments,
         min_segment_duration=args.min_segment_duration,
     )
+    matches = run_pipeline(args.audio, store, max_segments=args.max_segments)
     for match in matches:
         print(
             f"{match.segment.start:7.2f}-{match.segment.end:7.2f} "
