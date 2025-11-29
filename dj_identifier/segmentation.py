@@ -13,6 +13,7 @@ def onset_boundaries(
     sr: int,
     hop_length: int = 512,
     max_segments: int | None = None,
+    min_duration: float = 1.0,
 ) -> List[TrackSegment]:
     """
     Estimate track boundaries using onset peaks.
@@ -40,6 +41,21 @@ def onset_boundaries(
     times = samples_to_seconds([b * hop_length for b in frame_boundaries], sr)
 
     segments: List[TrackSegment] = []
+    current_start = times[0]
+
+    for end in times[1:]:
+        duration = end - current_start
+        if duration <= 0:
+            current_start = end
+            continue
+
+        if duration < min_duration and segments:
+            # Merge short blips into the previous segment to avoid tiny windows.
+            segments[-1] = TrackSegment(start=segments[-1].start, end=end)
+        elif duration >= min_duration:
+            segments.append(TrackSegment(start=current_start, end=end))
+
+        current_start = end
     for start, end in zip(times[:-1], times[1:]):
         if end - start <= 0:
             continue

@@ -65,6 +65,8 @@ _ensure_dependencies()
 def _resolve_ffmpeg() -> str:
     """Return an ffmpeg executable path or exit with a helpful hint."""
 
+    candidates: list[str] = []
+    seen: set[str] = set()
     candidates = []
 
     # 1) Explicit override from env
@@ -81,6 +83,26 @@ def _resolve_ffmpeg() -> str:
     candidates.extend(filter(None, [shutil.which("ffmpeg"), shutil.which("ffmpeg.exe")]))
 
     # 3) Local copies near the repo (common Windows unzip pattern)
+    for local_candidate in [
+        REPO_ROOT / "ffmpeg.exe",
+        REPO_ROOT / "ffmpeg" / "bin" / "ffmpeg.exe",
+        REPO_ROOT / "ffmpeg" / "bin" / "ffmpeg",
+    ]:
+        if local_candidate.exists():
+            candidates.append(str(local_candidate))
+
+    for candidate in candidates:
+        if not candidate:
+            continue
+
+        candidate_path = Path(candidate).expanduser().resolve()
+        candidate_key = str(candidate_path)
+        if candidate_key in seen:
+            continue
+        seen.add(candidate_key)
+
+        if candidate_path.exists():
+            return candidate_key
     local_ffmpeg = REPO_ROOT / "ffmpeg.exe"
     if local_ffmpeg.exists():
         candidates.append(str(local_ffmpeg))
