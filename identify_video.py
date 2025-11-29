@@ -90,13 +90,17 @@ def _resolve_ffmpeg() -> str:
             candidates.append(str(local_candidate))
 
     for candidate in candidates:
-        if not candidate or candidate in seen:
+        if not candidate:
             continue
-        seen.add(candidate)
 
-        candidate_path = Path(candidate)
+        candidate_path = Path(candidate).expanduser().resolve()
+        candidate_key = str(candidate_path)
+        if candidate_key in seen:
+            continue
+        seen.add(candidate_key)
+
         if candidate_path.exists():
-            return str(candidate_path)
+            return candidate_key
 
     hint = (
         "ffmpeg introuvable. Installez-le et ajoutez-le au PATH, ou fournissez "
