@@ -36,6 +36,7 @@ def _ensure_dependencies() -> None:
             shlex.quote(str(REQUIREMENTS_PATH)),
         ]
     )
+    pip_cmd = f"{sys.executable} -m pip install -r {REQUIREMENTS_PATH}"
     required = [
         "numpy",
         "librosa",
@@ -94,6 +95,16 @@ def _resolve_ffmpeg() -> str:
         "(ex: setx FFMPEG_PATH C:\\chemin\\vers\\ffmpeg.exe sous Windows)."
     )
     raise SystemExit(hint)
+def _ensure_ffmpeg() -> None:
+    """Check ffmpeg availability with a clear, user-friendly hint."""
+
+    if shutil.which("ffmpeg") is None:
+        hint = (
+            "ffmpeg introuvable. Installez-le et assurez-vous que la commande "
+            "`ffmpeg` est accessible via le PATH (ex: `sudo apt-get install ffmpeg` "
+            "sur Linux, ou installer le zip Windows puis ajouter `bin` au PATH)."
+        )
+        raise SystemExit(hint)
 
 from dj_identifier.pipeline import bootstrap_store, run_pipeline
 from dj_identifier.types import TrackMatch
@@ -120,11 +131,13 @@ def ensure_store(db_path: Path = DEFAULT_FINGERPRINT_DB, bootstrap_path: Path = 
 
 
 def extract_audio(video_path: Path, workdir: Path, ffmpeg_path: str) -> Path:
+def extract_audio(video_path: Path, workdir: Path) -> Path:
     """Utilise ffmpeg pour extraire l'audio mono du conteneur vidéo."""
 
     output = workdir / f"{video_path.stem}.wav"
     command = [
         ffmpeg_path,
+        "ffmpeg",
         "-y",
         "-i",
         str(video_path),
@@ -143,6 +156,7 @@ def extract_audio(video_path: Path, workdir: Path, ffmpeg_path: str) -> Path:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
+    subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return output
 
 
@@ -196,6 +210,7 @@ def main() -> int:
 
     try:
         ffmpeg_path = _resolve_ffmpeg()
+        _ensure_ffmpeg()
     except SystemExit as exc:
         print(exc)
         return 1
@@ -205,6 +220,7 @@ def main() -> int:
     try:
         with tempfile.TemporaryDirectory() as tmpdir:
             audio_path = extract_audio(video_path, Path(tmpdir), ffmpeg_path)
+            audio_path = extract_audio(video_path, Path(tmpdir))
             matches = run_pipeline(str(audio_path), store)
     except subprocess.CalledProcessError as exc:
         print("Extraction audio échouée (ffmpeg)")
