@@ -6,12 +6,54 @@ imprime les titres/horodatages trouvés.
 from __future__ import annotations
 
 import argparse
+import importlib.util
+import json
+import shutil
 import json
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 from typing import Dict, Iterable, List
+
+
+def _ensure_dependencies() -> None:
+    """Fail fast with a helpful message if runtime deps are missing."""
+
+    required = [
+        ("numpy", "pip install -r requirements.txt"),
+        ("librosa", "pip install -r requirements.txt"),
+        ("soundfile", "pip install -r requirements.txt"),
+    ]
+    missing: list[str] = []
+    for module, hint in required:
+        if importlib.util.find_spec(module) is None:
+            missing.append(f"- {module} (essayez : {hint})")
+
+    if missing:
+        message = "\n".join(
+            [
+                "Dépendances manquantes pour lancer l'identification :",
+                *missing,
+                "\nInstallez-les puis relancez le script.",
+            ]
+        )
+        raise SystemExit(message)
+
+
+_ensure_dependencies()
+
+
+def _ensure_ffmpeg() -> None:
+    """Check ffmpeg availability with a clear, user-friendly hint."""
+
+    if shutil.which("ffmpeg") is None:
+        hint = (
+            "ffmpeg introuvable. Installez-le et assurez-vous que la commande "
+            "`ffmpeg` est accessible via le PATH (ex: `sudo apt-get install ffmpeg` "
+            "sur Linux, ou installer le zip Windows puis ajouter `bin` au PATH)."
+        )
+        raise SystemExit(hint)
 
 from dj_identifier.pipeline import bootstrap_store, run_pipeline
 from dj_identifier.types import TrackMatch
@@ -105,6 +147,12 @@ def main() -> int:
     try:
         video_path = validate_video_path(video_input)
     except (FileNotFoundError, ValueError) as exc:
+        print(exc)
+        return 1
+
+    try:
+        _ensure_ffmpeg()
+    except SystemExit as exc:
         print(exc)
         return 1
 
