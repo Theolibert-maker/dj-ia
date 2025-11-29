@@ -150,6 +150,12 @@ def extract_audio(video_path: Path, workdir: Path) -> Path:
         "1",
         str(output),
     ]
+    subprocess.run(
+        command,
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
     subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return output
 
