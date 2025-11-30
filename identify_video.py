@@ -36,6 +36,7 @@ def _ensure_dependencies() -> None:
             shlex.quote(str(REQUIREMENTS_PATH)),
         ]
     )
+    pip_cmd = f"{sys.executable} -m pip install -r {REQUIREMENTS_PATH}"
     required = [
         "numpy",
         "librosa",
@@ -66,6 +67,7 @@ def _resolve_ffmpeg() -> str:
 
     candidates: list[str] = []
     seen: set[str] = set()
+    candidates = []
 
     # 1) Explicit override from env
     env_value = os.environ.get(FFMPEG_ENV_VAR)
@@ -101,6 +103,13 @@ def _resolve_ffmpeg() -> str:
 
         if candidate_path.exists():
             return candidate_key
+    local_ffmpeg = REPO_ROOT / "ffmpeg.exe"
+    if local_ffmpeg.exists():
+        candidates.append(str(local_ffmpeg))
+
+    for candidate in candidates:
+        if candidate and Path(candidate).exists():
+            return str(Path(candidate))
 
     hint = (
         "ffmpeg introuvable. Installez-le et ajoutez-le au PATH, ou fournissez "
@@ -108,6 +117,16 @@ def _resolve_ffmpeg() -> str:
         "(ex: setx FFMPEG_PATH C:\\chemin\\vers\\ffmpeg.exe sous Windows)."
     )
     raise SystemExit(hint)
+def _ensure_ffmpeg() -> None:
+    """Check ffmpeg availability with a clear, user-friendly hint."""
+
+    if shutil.which("ffmpeg") is None:
+        hint = (
+            "ffmpeg introuvable. Installez-le et assurez-vous que la commande "
+            "`ffmpeg` est accessible via le PATH (ex: `sudo apt-get install ffmpeg` "
+            "sur Linux, ou installer le zip Windows puis ajouter `bin` au PATH)."
+        )
+        raise SystemExit(hint)
 
 from dj_identifier.pipeline import bootstrap_store, run_pipeline
 from dj_identifier.types import TrackMatch
@@ -134,11 +153,13 @@ def ensure_store(db_path: Path = DEFAULT_FINGERPRINT_DB, bootstrap_path: Path = 
 
 
 def extract_audio(video_path: Path, workdir: Path, ffmpeg_path: str) -> Path:
+def extract_audio(video_path: Path, workdir: Path) -> Path:
     """Utilise ffmpeg pour extraire l'audio mono du conteneur vidéo."""
 
     output = workdir / f"{video_path.stem}.wav"
     command = [
         ffmpeg_path,
+        "ffmpeg",
         "-y",
         "-i",
         str(video_path),
@@ -157,6 +178,7 @@ def extract_audio(video_path: Path, workdir: Path, ffmpeg_path: str) -> Path:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
+    subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return output
 
 
@@ -198,7 +220,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--min-segment-duration",
         type=float,
-        default=2.5,
+        default=1.0,
         help="Fusionne/ignore les segments plus courts que cette durée (secondes)",
     )
     parser.add_argument(
@@ -222,6 +244,7 @@ def main() -> int:
 
     try:
         ffmpeg_path = _resolve_ffmpeg()
+        _ensure_ffmpeg()
     except SystemExit as exc:
         print(exc)
         return 1
@@ -237,6 +260,8 @@ def main() -> int:
                 max_segments=args.max_segments,
                 min_segment_duration=args.min_segment_duration,
             )
+            audio_path = extract_audio(video_path, Path(tmpdir))
+            matches = run_pipeline(str(audio_path), store)
     except subprocess.CalledProcessError as exc:
         print("Extraction audio échouée (ffmpeg)")
         print(exc.stderr.decode("utf-8", errors="ignore"))

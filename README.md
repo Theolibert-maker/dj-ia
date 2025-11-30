@@ -34,7 +34,7 @@ python -m dj_identifier.cli set.wav --bootstrap examples/fingerprints.json --max
 
 - `--bootstrap` : fichier JSON optionnel contenant des empreintes connues (voir ci-dessous).
 - `--fingerprints` : chemin où persister/charger la base d'empreintes locale.
-- `--min-segment-duration` : fusionne/ignore les segments inférieurs à cette durée (par défaut 2,5s) pour éviter des fenêtres trop petites.
+- `--min-segment-duration` : fusionne/ignore les segments inférieurs à cette durée (par défaut 1s) pour éviter des fenêtres trop petites.
 
 ### Mode "j'upload mon set et ça marche"
 Un petit serveur HTTP est fourni pour accepter un fichier uploadé et renvoyer les morceaux détectés. Installe `fastapi` et `uvicorn`, démarre le serveur puis envoie simplement le fichier audio.
@@ -97,7 +97,7 @@ python identify_video.py chemin/vers/set.mp4
 Options utiles si vous souhaitez contrôler la granularité de la segmentation :
 
 ```bash
-python identify_video.py --min-segment-duration 3.0 --max-segments 15 chemin/vers/set.mp4
+python identify_video.py --min-segment-duration 2.0 --max-segments 15 chemin/vers/set.mp4
 ```
 
 Sans argument, le script demande simplement le chemin du fichier. Le résultat liste chaque morceau avec son timecode :
@@ -107,7 +107,7 @@ Sans argument, le script demande simplement le chemin du fichier. Le résultat l
 [01:32 - 03:05] Artist Two - Anthem (confiance 0.85)
 ```
 
-Pour éviter les avertissements `librosa` sur des fenêtres trop courtes, les segments sont fusionnés pour durer au moins quelques secondes et les fenêtres audio trop courtes sont ignorées lors du fingerprinting.
+Pour éviter les avertissements `librosa` sur des fenêtres trop courtes, les segments de moins d'une seconde sont fusionnés/ignorés avant le fingerprinting.
 
 ### Structure d'un fichier d'empreintes
 ```json
