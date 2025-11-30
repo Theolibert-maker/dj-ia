@@ -13,20 +13,18 @@ def onset_boundaries(
     sr: int,
     hop_length: int = 512,
     max_segments: int | None = None,
-    min_duration: float = 2.5,
+    min_duration: float = 1.0,
 ) -> List[TrackSegment]:
     """
     Estimate track boundaries using onset peaks.
 
     The algorithm leverages librosa's onset detection to find large energy changes,
     which roughly correlate to mix transitions. Boundaries are clipped to the audio
-    duration and deduplicated. Short blips are merged forward to avoid unstable
-    fingerprint windows.
+    duration and deduplicated.
     """
 
     import librosa
 
-    print("[Segmentation] Calcul de la force des attaques…")
     onset_frames = librosa.onset.onset_detect(
         y=y,
         sr=sr,
@@ -34,7 +32,6 @@ def onset_boundaries(
         backtrack=True,
         units="frames",
     )
-    print(f"[Segmentation] Pics détectés: {len(onset_frames)}")
 
     frame_boundaries = [0, *sorted(set(int(f) for f in onset_frames))]
     if max_segments:
@@ -59,16 +56,11 @@ def onset_boundaries(
             segments.append(TrackSegment(start=current_start, end=end))
 
         current_start = end
+    for start, end in zip(times[:-1], times[1:]):
+        if end - start <= 0:
+            continue
+        segments.append(TrackSegment(start=start, end=end))
 
-    # If the tail is still short, merge it backward to keep windows stable.
-    if segments and segments[-1].duration() < min_duration:
-        last = segments.pop()
-        if segments:
-            segments[-1] = TrackSegment(start=segments[-1].start, end=last.end)
-        else:
-            segments.append(last)
-
-    print(f"[Segmentation] Segments validés: {len(segments)}")
     return segments
 
 
@@ -77,9 +69,7 @@ def load_audio(path: str, sr: int = 22050) -> tuple[np.ndarray, int]:
 
     import librosa
 
-    print(f"[Chargement] Lecture du fichier audio {path}…")
     y, sr = librosa.load(path, sr=sr, mono=True)
-    print("[Chargement] Lecture terminée")
     return y, sr
 
 
