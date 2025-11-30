@@ -1,8 +1,3 @@
-"""Outil en ligne de commande pour identifier un set vidéo (.mp4/.mkv).
-
-Ce script extrait l'audio avec ffmpeg, lance le pipeline existant et
-imprime les titres/horodatages trouvés.
-"""
 from __future__ import annotations
 
 import argparse
@@ -99,18 +94,7 @@ def _resolve_ffmpeg() -> str:
             continue
         seen.add(candidate_key)
 
-        if candidate_path.exists() and candidate_path.is_file():
-            try:
-                subprocess.run(
-                    [candidate_key, "-version"],
-                    check=True,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                )
-            except (OSError, subprocess.CalledProcessError):
-                # Not an executable ffmpeg binary; try the next candidate.
-                continue
-
+        if candidate_path.exists():
             return candidate_key
 
     hint = (
@@ -148,7 +132,6 @@ def extract_audio(video_path: Path, workdir: Path, ffmpeg_path: str) -> Path:
     """Utilise ffmpeg pour extraire l'audio mono du conteneur vidéo."""
 
     output = workdir / f"{video_path.stem}.wav"
-    print(f"[Extraction] Démarrage de l'extraction audio depuis {video_path}…")
     command = [
         ffmpeg_path,
         "-y",
@@ -169,7 +152,6 @@ def extract_audio(video_path: Path, workdir: Path, ffmpeg_path: str) -> Path:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-    print(f"[Extraction] Audio extrait vers {output}")
     return output
 
 
@@ -184,7 +166,9 @@ def render_matches(matches: Iterable[TrackMatch]) -> str:
     for match in matches:
         start = format_time(match.segment.start)
         end = format_time(match.segment.end)
-        lines.append(f"{match.title} – {match.artist} : {start} → {end}")
+        lines.append(
+            f"[{start} - {end}] {match.artist} - {match.title} (confiance {match.confidence:.2f})"
+        )
     if not lines:
         return "Aucun titre détecté."
     return "\n".join(lines)
@@ -253,7 +237,6 @@ def main() -> int:
         print(exc.stderr.decode("utf-8", errors="ignore"))
         return 1
 
-    print("\n[Résumé] Titres détectés :")
     print(render_matches(matches))
     return 0
 

@@ -14,8 +14,7 @@ def run_pipeline(
     fingerprint_store: FingerprintStore,
     target_sr: int = 22050,
     max_segments: int | None = None,
-    min_segment_duration: float = 2.5,
-    min_fingerprint_samples: int = 4096,
+    min_segment_duration: float = 1.0,
 ) -> List[TrackMatch]:
     """
     End-to-end pipeline that produces timecoded matches for a DJ set.
@@ -24,28 +23,11 @@ def run_pipeline(
     looks up matches in the supplied fingerprint store.
     """
 
-    print("[Chargement] Chargement de l'audio…")
     y, sr = load_audio(audio_path, sr=target_sr)
-    print(f"[Chargement] Audio chargé (échantillons: {len(y)}, sr: {sr})")
-
-    print("[Segmentation] Détection des segments…")
     segments = onset_boundaries(y, sr, max_segments=max_segments, min_duration=min_segment_duration)
-    print(f"[Segmentation] {len(segments)} segment(s) détecté(s)")
-
-    print("[Empreintes] Génération des empreintes digitales…")
-    fingerprints: List[SegmentFingerprint] = fingerprint_segments(
-        y,
-        sr,
-        segments,
-        min_samples=min_fingerprint_samples,
-        min_duration=min_segment_duration,
-    )
-    print(f"[Empreintes] Génération terminée ({len(fingerprints)} empreinte(s))")
-
-    print("[Correspondances] Recherche des correspondances…")
-    matches = build_matches(fingerprints, fingerprint_store)
-    print(f"[Correspondances] {len(matches)} correspondance(s) trouvée(s)")
-    return matches
+    segments = onset_boundaries(y, sr, max_segments=max_segments)
+    fingerprints: Iterable[SegmentFingerprint] = fingerprint_segments(y, sr, segments)
+    return build_matches(fingerprints, fingerprint_store)
 
 
 def bootstrap_store(samples: FingerprintDB, path: str | None = None) -> FingerprintStore:
