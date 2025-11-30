@@ -27,25 +27,19 @@ def fingerprint_segments(
     sr: int,
     segments: Sequence[TrackSegment],
     fingerprint_fn=chroma_fingerprint,
-    min_samples: int = 4096,
-    min_duration: float | None = None,
+    min_samples: int = 2048,
 ) -> List[SegmentFingerprint]:
     """Fingerprint each segment individually."""
 
     fingerprints: List[SegmentFingerprint] = []
-    minimum = max(min_samples, int(sr * (min_duration or 0)))
-
     for segment in segments:
         start = int(segment.start * sr)
         end = int(segment.end * sr)
         slice_ = y[start:end]
-        if len(slice_) < minimum:
+        if len(slice_) < min_samples:
             continue
-        try:
-            digest = fingerprint_fn(slice_, sr)
-        except Exception:
-            # Skip unstable slices instead of crashing the pipeline.
-            continue
+        digest = fingerprint_fn(slice_, sr)
+        digest = fingerprint_fn(y[start:end], sr)
         fingerprints.append(SegmentFingerprint(segment=segment, hash=digest))
     return fingerprints
 

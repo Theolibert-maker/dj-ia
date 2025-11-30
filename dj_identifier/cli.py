@@ -28,7 +28,7 @@ def parse_args(argv: List[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--min-segment-duration",
         type=float,
-        default=2.5,
+        default=1.0,
         help="Merge or skip segments shorter than this duration (seconds)",
     )
     parser.add_argument(
@@ -59,6 +59,7 @@ def main(argv: List[str] | None = None) -> None:
         max_segments=args.max_segments,
         min_segment_duration=args.min_segment_duration,
     )
+    matches = run_pipeline(args.audio, store, max_segments=args.max_segments)
     for match in matches:
         print(
             f"{match.segment.start:7.2f}-{match.segment.end:7.2f} "
