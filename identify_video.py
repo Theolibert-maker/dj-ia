@@ -1,8 +1,3 @@
-"""Outil en ligne de commande pour identifier un set vidéo (.mp4/.mkv).
-
-Ce script extrait l'audio avec ffmpeg, lance le pipeline existant et
-imprime les titres/horodatages trouvés.
-"""
 from __future__ import annotations
 
 import argparse
@@ -99,7 +94,7 @@ def _resolve_ffmpeg() -> str:
             continue
         seen.add(candidate_key)
 
-        if candidate_path.exists() and candidate_path.is_file():
+        if candidate_path.exists():
             return candidate_key
 
     hint = (

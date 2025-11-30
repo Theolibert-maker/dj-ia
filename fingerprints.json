@@ -1,0 +1,16 @@
+{
+  "demo-track-01": {
+    "artist": "Artist One",
+    "hashes": [
+      "ab12cd0011"
+    ],
+    "title": "Artist One - Intro"
+  },
+  "demo-track-02": {
+    "artist": "Artist Two",
+    "hashes": [
+      "de34fa0022"
+    ],
+    "title": "Artist Two - Anthem"
+  }
+}
